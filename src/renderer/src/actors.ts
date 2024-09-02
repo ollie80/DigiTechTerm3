@@ -3,7 +3,7 @@ import { Resources } from "./resources";
 import "./support";
 import { Game } from "./game";
 import { GridTile } from "./grid";
-import { gameSprites, getRandom, moveTowards } from "./support";
+import { gameSprites, getRandom, loadGame, moveTowards } from "./support";
 import { TweenableActor, Ease } from "./tween";
 
 export class Player extends TweenableActor {
@@ -14,6 +14,7 @@ export class Player extends TweenableActor {
   public maxFuel = 4;
   public deathTimer = new ex.Timer({ interval: 1000 });
   private animSpeed = 2;
+  
 
   constructor(
     pos: ex.Vector,
@@ -27,6 +28,8 @@ export class Player extends TweenableActor {
       color: ex.Color.Red,
       z: 99999,
     });
+  
+    loadGame(1)
   }
 
   onInitialize(engine: ex.Engine): void {
@@ -145,27 +148,32 @@ export class Player extends TweenableActor {
         ],
       })
     );
+    this.graphics.use("right");
   }
 
   mouseClick() {
-    if (!this.isMoving) {
-      const startTile = this.game.grid.getTileColliding(this.pos, "main");
-      const endTile = this.game.grid.getTileColliding(
-        this.game.globalMousePos,
-        "main"
-      );
+    if (this.game.isPlaying) {
+      if (!this.isMoving) {
+        const startTile = this.game.grid.getTileColliding(this.pos, "main");
+        const endTile = this.game.grid.getTileColliding(
+          this.game.globalMousePos,
+          "main"
+        );
 
-      if (startTile && endTile) {
-        if (endTile.pos.y < startTile.pos.y) {
-          return;
-        } else {
-          this.path = this.game.pathFinder.findPath(startTile, endTile);
+        if (startTile && endTile) {
+          if (endTile.pos.y < startTile.pos.y) {
+            return;
+          } else {
+            this.path = this.game.pathFinder.findPath(startTile, endTile);
+          }
+
+          this.path[0].actor.graphics.hide();
+          this.path.splice(0, 1);
+
+          this.startMoving();
+
+          console.log(this.path);
         }
-
-        this.path[0].actor.graphics.hide();
-        this.path.splice(0, 1);
-
-        this.startMoving();
       }
     }
   }
@@ -191,8 +199,6 @@ export class Player extends TweenableActor {
           const nextTile = this.path[0];
           const direction = nextTile.actor.pos.sub(this.pos).normalize();
 
-        
-
           // Determine movement direction
           if (direction.y > 0) {
             this.pos.y += (this.speed * delta) / 1000;
@@ -209,23 +215,26 @@ export class Player extends TweenableActor {
           if (this.pos.distance(nextTile.actor.pos) < 1) {
             this.path[0].actor.graphics.hide();
             this.path.shift();
-            //this.fuel -= 1;
-            console.log('here')
-
+            this.fuel -= 1;
+            this.game.score += 1;
+            
+            console.log("here");
           }
-
         }
       }
     }
   }
 
   death() {
-    if (this.deathTimer.complete) {
-      this.kill();
-    }
+    if (this.game.isPlaying) {
+      if (this.deathTimer.complete) {
+        this.kill();
+      }
 
-    if (this.fuel <= 0) {
-      this.kill();
+      if (this.fuel <= 0) {
+        this.game.gameOver();
+        this.path = [];
+      }
     }
   }
 
@@ -238,21 +247,23 @@ export class Player extends TweenableActor {
 
 export class CameraBar extends ex.Actor {
   constructor(
-    private player: Player,
     private game: Game
   ) {
     super();
 
-    this.pos = ex.vec(3.5 * 16, this.player.pos.y);
+    this.pos = ex.vec(3.5 * 16, this.game.player.pos.y);
   }
 
   onPreUpdate(engine: ex.Engine, delta: number): void {
-    this.pos.y = this.player.pos.y;
+    this.pos.y = this.game.player.pos.y;
   }
 }
 
 export class Rubbish extends ex.Actor {
-  constructor(pos: ex.Vector) {
+  constructor(
+    pos: ex.Vector,
+    private game: Game
+  ) {
     super({ width: 6, height: 6, pos: pos, z: 999999 });
     this.graphics.use(
       ex.Sprite.from(Resources[`rubbish${getRandom(1, 3) - 1}`])
@@ -270,6 +281,7 @@ export class Rubbish extends ex.Actor {
     if (other.owner instanceof Player) {
       other.owner.fuel = other.owner.maxFuel;
       this.death();
+      this.game.spawnRubbish();
     }
   }
 
@@ -278,4 +290,21 @@ export class Rubbish extends ex.Actor {
   }
 
   onPreUpdate(engine: ex.Engine, delta: number): void {}
+}
+
+export class TileHighlight extends ex.Actor {
+  constructor(private game: Game) {
+    super({ width: 16, height: 16, z: 9999999 });
+    this.graphics.use(ex.Sprite.from(Resources.highlight));
+  }
+
+  onPreUpdate(engine: ex.Engine, delta: number): void {
+    let tile = this.game.grid.getTileColliding(
+      this.game.globalMousePos,
+      "main"
+    );
+    if (tile) {
+      this.pos = tile.actor.pos;
+    }
+  }
 }

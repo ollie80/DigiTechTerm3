@@ -39,20 +39,9 @@ export async function loadGame(id: number) {
 
   if (data) {
     saveData = JSON.parse(data);
-
-    saveData.thermalReading = saveData.thermalReading / saveData.gravityScale;
-
-    if (Number.isNaN(saveData.thermalReading)) {
-      saveData.thermalReading = 0;
-    }
-
-    saveData.gravityScale = getRandom(8, 23);
-
-    saveData.thermalReading = saveData.thermalReading * saveData.gravityScale;
-
-    if (Number.isNaN(saveData.thermalReading)) {
-      saveData.thermalReading = 0;
-    }
+  } else {
+    createSave(1);
+    loadGame(1)
   }
 }
 
@@ -63,17 +52,7 @@ export const gameConstants = {
 export const settings = {};
 
 export var saveData = {
-  /*
-  Real money values, they are called this to trick people editing save data.
-  It also works against people using memory-altering software (such as cheat engine) 
-  because people the "ThermalReading" is the real money value multiplied by the
-  "Gravity Scale" which is a random number generated below. Multiplying the value will
-  make it much harder to find.
-  */
-
-  money: 99,
-  thermalReading: 0,
-  gravityScale: 0,
+  highscore: 0,
 };
 
 export const gameSprites = {
@@ -106,32 +85,35 @@ export function round(value, precision) {
   return Math.round(value * multiplier) / multiplier;
 }
 
-
 export function moveTowards(
   start: Vector,
   end: Vector,
   magnitude: number
 ): Vector {
-   // Calculate the direction vector from start to end
-   const direction = end.sub(start).normalize();
+  // Calculate the direction vector from start to end
+  const direction = end.sub(start).normalize();
 
-   // Calculate the distance between start and end
-   const distanceToEnd = end.distance(start);
- 
-   // If the distance is less than the threshold, return the vector to the end position
-   if (distanceToEnd <= 5) {
-     return end.sub(start); // Directly move to the end position
-   }
- 
-   // Calculate the vector of the specified magnitude
-   let resultVector = direction.scale(magnitude);
- 
-   // If the result vector would overshoot the end position, return a vector to the end position
-   if (magnitude > distanceToEnd) {
-     resultVector = end.sub(start);
-   }
- 
-   return resultVector;
+  // Calculate the distance between start and end
+  const distanceToEnd = end.distance(start);
+
+  // If the distance is less than the threshold, return the vector to the end position
+  if (distanceToEnd <= 5) {
+    return end.sub(start); // Directly move to the end position
+  }
+
+  // Calculate the vector of the specified magnitude
+  let resultVector = direction.scale(magnitude);
+
+  // If the result vector would overshoot the end position, return a vector to the end position
+  if (magnitude > distanceToEnd) {
+    resultVector = end.sub(start);
+  }
+
+  return resultVector;
+}
+
+export function removeDuplicates(arr) {
+  return [...new Set(arr)];
 }
 
 export function moveTowards1(
@@ -148,25 +130,24 @@ export function moveTowards1(
   console.log(moveVec);
 
   let distanceLeft = Math.sqrt(relx * relx + rely * rely);
-  
+
   if (distanceLeft < magnitude) {
-    return vec(relx, rely)
+    return vec(relx, rely);
   }
 
   if (oneAxis) {
     if (magnitude > Math.abs(relx)) {
-      return vec(relx, 0)
+      return vec(relx, 0);
     } else {
-      return vec(magnitude, 0)
+      return vec(magnitude, 0);
     }
-    } else {
+  } else {
     if (magnitude > Math.abs(rely)) {
-      return vec(0, rely)
+      return vec(0, rely);
     } else {
-      return vec(0, magnitude)
-      }
+      return vec(0, magnitude);
     }
-  
+  }
 
   // Calculate the move vector based on the angle and magnitude
 

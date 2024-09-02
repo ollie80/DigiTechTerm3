@@ -1,8 +1,118 @@
-html, body {
-    overflow: hidden;
-    padding: 0;
+html,
+body {
+  overflow: hidden;
+  cursor: none;
+  margin: 0;
+  padding: 0;
+  color: var(--text);
+  background-color: black;
+  font-family: "main";
+  font-smooth: never;
+  -webkit-font-smoothing: none;
+  --bg-main: rgba(9, 9, 14, 0.8);
+  --bg-secondary: #474a4b;
+  --border: white;
+  --text: white;
+  --highlight: #6e967c;
+}
+
+:not(input):not(textarea),
+:not(input):not(textarea)::after,
+:not(input):not(textarea)::before {
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+@font-face {
+  font-family: "main";
+  src:
+    url("graphics/fonts/Main/VarelaRound-Regular.woff2") format("woff2"),
+    url("graphics/fonts/Main/VarelaRound-Regular.woff") format("woff");
+}
+
+canvas {
+    cursor: none;
+}
+
+input,
+button,
+textarea,
+:focus {
+  outline: none;
 }
 
 #game {
-    margin: 0;
+  margin: 0;
+}
+
+#title {
+  position: absolute;
+  top: 2%;
+  font-size: 40px;
+  width: 100%;
+  text-align: center;
+  font-weight: 900;
+}
+
+#highscore {
+  position: absolute;
+  top: 20%;
+  font-size: large;
+  left: 5%;
+  font-weight: 600;
+}
+
+#score {
+  position: absolute;
+  top: 2%;
+  font-size: x-large;
+  left: 5%;
+  font-weight: 600;
+}
+
+.play {
+  position: absolute;
+  background-color: var(--bg-main);
+  border: 2px solid var(--border);
+  border-radius: 5px;
+  color: white;
+  top: 54%;
+  left: 32%;
+  right: 32%;
+  bottom: 40%;
+  font-size: 20px;
+}
+
+.quit {
+  position: absolute;
+  background-color: var(--bg-main);
+  border: 2px solid var(--border);
+  border-radius: 5px;
+  color: white;
+  top: 66%;
+  left: 32%;
+  right: 32%;
+  bottom: 28%;
+  font-size: 20px;
+}
+
+.play:hover,
+.quit:hover {
+  cursor: pointer;
+}
+
+#label {
+    position: absolute;
+    top: 2%;
+    font-size: 40px;
+    width: 100%;
+    text-align: center;
+    font-weight: 900;
+    color: #a35b70;
+}
+
+.hide {
+  visibility: hidden;
+  display: none;
 }

@@ -1,10 +1,6 @@
 import * as ex from "excalibur";
-import { start } from "repl";
-import { getRandom } from "./support";
-import { Resources } from "./resources";
-import { TiledLayerComponent } from "@excaliburjs/plugin-tiled/dist/src/deprecated";
-import { Layer, TiledMap } from "@excaliburjs/plugin-tiled";
-import { AsyncResource } from "async_hooks";
+import { removeDuplicates } from "./support";
+
 import { Game } from "./game";
 
 export type GridArgs = {
@@ -49,7 +45,7 @@ export class GridTile {
         this.pos.x * this.grid.tileSize,
         this.pos.y * this.grid.tileSize
       ),
-      collisionType: ex.CollisionType.Passive
+      collisionType: ex.CollisionType.Passive,
     });
     this.actor.graphics.use(this.sprite);
     this.pos = args.pos;
@@ -62,15 +58,17 @@ export class GridObject {
   public pos: ex.Vector;
   private sprite: ex.Sprite;
   private size: ex.Vector;
+  private layer: string;
 
   constructor(
     private grid: Grid,
-    private layer: string,
+    layer: string,
     args: GridObjectArgs
   ) {
     this.sprite = args.sprite;
     this.size = args.size;
     this.pos = args.pos;
+    this.layer = layer;
     this.actor = new ex.Actor({
       pos: ex.vec(
         this.pos.x * this.grid.tileSize,
@@ -133,7 +131,6 @@ export class Grid {
     );
   }
 
-
   public gridToWorldPos(pos: ex.Vector): ex.Vector {
     return ex.vec(pos.x * this.tileSize, pos.y * this.tileSize);
   }
@@ -141,17 +138,14 @@ export class Grid {
   getTileColliding(pos: ex.Vector, layerName: string): GridTile | undefined {
     let layer = this.getLayer(layerName);
     if (layer) {
-        for (let tile of layer.tiles) {
-
-            if (tile.actor.collider.bounds.contains(pos)) {
-
-              return tile;
-            }
+      for (let tile of layer.tiles) {
+        if (tile.actor.collider.bounds.contains(pos)) {
+          return tile;
         }
+      }
     }
     return undefined;
-}
-
+  }
 
   public getTileAtPos(pos: ex.Vector, layerName: string): GridTile | undefined {
     let layer = this.getLayer(layerName);
@@ -259,6 +253,6 @@ export class PathFinder {
       }
     }
 
-    return path;
+    return removeDuplicates(path) as GridTile[];
   }
 }

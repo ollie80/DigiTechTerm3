@@ -1,25 +1,11 @@
 import * as ex from "excalibur";
 
-import { Resources } from "./resources";
-import { CameraBar, Player, Rubbish } from "./actors";
+import { CameraBar, Player, Rubbish, TileHighlight } from "./actors";
 import { Grid, GridTile, PathFinder } from "./grid";
-import {
-  Layer,
-  PluginObject,
-  TiledMap,
-  TiledResource,
-} from "@excaliburjs/plugin-tiled";
+
+import { loadGame, saveData, gameSprites } from "./support";
+import { Resources } from "./resources";
 import { Recoverable } from "repl";
-import {
-  getRandom,
-  round,
-  loadGame,
-  saveData,
-  saveGame,
-  createSave,
-  gameSprites,
-} from "./support";
-import { memoryUsage } from "process";
 
 export class Game extends ex.Scene {
   public saveId: number;
@@ -29,9 +15,11 @@ export class Game extends ex.Scene {
   public mouseDown = false;
 
   public pathFinder: PathFinder;
-  private player: Player;
+  public player: Player;
   private cameraBar: CameraBar;
   public grid: Grid;
+  public score: number = 0;
+  public isPlaying = false;
 
   public sounds: ex.Sound[] = [];
 
@@ -49,13 +37,121 @@ export class Game extends ex.Scene {
 
     this.pathFinder = new PathFinder(this.grid, "main");
 
-    this.player = new Player(ex.vec(3 * 16, 0), this);
+    this.player = new Player(ex.vec(3 * 16, -1), this);
 
-    this.cameraBar = new CameraBar(this.player, this);
+    this.cameraBar = new CameraBar(this);
 
     this.saveId = 1;
 
     loadGame(this.saveId);
+  }
+
+  setupUI() {
+    const highscore = document.getElementById("highscore");
+    if (highscore) {
+      highscore.innerText = `Highscore: ${saveData.highscore.toString()}`;
+    }
+
+    const menu = document.getElementById("menu");
+
+    menu?.classList.remove("hide");
+
+    const menuPlayButton = document.getElementById("menu-play");
+    const menuQuitButton = document.getElementById("menu-quit");
+    console.log(menuPlayButton);
+    if (menuPlayButton != null) {
+      menuPlayButton.onclick = () => this.startGame();
+    }
+
+    if (menuQuitButton != null) {
+      menuQuitButton.onclick = () => this.quit();
+    }
+
+    const deathPlayButton = document.getElementById("death-play");
+    const deathQuitButton = document.getElementById("death-quit");
+
+    if (deathPlayButton != null) {
+      console.log("it exists");
+      deathPlayButton.onclick = () => this.startGame();
+    }
+
+    if (deathQuitButton != null) {
+      deathQuitButton.onclick = () => this.quit();
+    }
+  }
+
+  startGame() {
+    const menu = document.getElementById("menu");
+
+    menu?.classList.add("hide");
+
+    const gameover = document.getElementById("death");
+    
+    gameover?.classList.add("hide");
+
+    const gameUI = document.getElementById("gameplay");
+
+    gameUI?.classList.remove("hide");
+
+    for (let actor of this.actors) {
+      if (actor instanceof TileHighlight) {
+        actor.kill();
+      }
+      if (actor instanceof Player) {
+        actor.kill();
+      }
+    }
+
+    let layer = this.grid.getLayer('main');
+    if (layer) {
+      for (let tile of layer.tiles) {
+        tile.actor.kill()   
+      }
+      layer.tiles = [];
+    }
+
+    this.generateGrid()
+
+    this.player = new Player(ex.vec(3 * 16, 0), this);
+    this.add(this.player);
+
+    this.add(new TileHighlight(this));
+    this.spawnRubbish();
+
+
+
+
+    this.isPlaying = true;
+  }
+
+  gameOver() {
+    if (this.score > saveData.highscore) {
+      saveData.highscore = this.score;
+    }
+
+    this.isPlaying = false;
+
+    const gameUI = document.getElementById("gameplay");
+
+    gameUI?.classList.add("hide");
+
+    const gameover = document.getElementById("death");
+
+    gameover?.classList.remove("hide");
+  }
+
+  quit() {}
+
+  setScores() {
+    const score = document.getElementById("score");
+    if (score) {
+      score.innerText = `Score: ${this.score}`;
+    }
+
+    const highscore = document.getElementById("highscore");
+    if (highscore) {
+      highscore.innerText = `Highscore: ${saveData.highscore.toString()}`;
+    }
   }
 
   generateGrid() {
@@ -124,28 +220,41 @@ export class Game extends ex.Scene {
     }
   }
 
-  spawnRubbish(grid: Grid) {
+  spawnRubbish() {
     const closeRubbish: GridTile[] = [];
     const farRubbish: GridTile[] = [];
-    const maxCloseDistance = 4 * this.grid.tileSize;
-    const maxFarDistance = 6 * this.grid.tileSize;
+    const maxCloseDistance = 3.5 * this.grid.tileSize;
+    const maxFarDistance = 5 * this.grid.tileSize;
     const layer = this.grid.getLayer("main");
+
+    //kill all rubbish
+    for (let actor of this.actors) {
+      if (actor instanceof Rubbish) {
+        actor.death();
+      }
+    }
+
     // Get all grid tiles that are far enough and close enough
+
     if (layer) {
       for (let tile of layer.tiles) {
         if (tile) {
           const distance =
-            tile.actor.pos.y -
-            this.player.pos.y +
-            (tile.actor.pos.x - this.player.pos.x);
+            Math.abs(tile.actor.pos.y - this.player.pos.y) +
+            Math.abs(tile.actor.pos.x - this.player.pos.x);
 
-          if (
-            distance <= maxCloseDistance &&
-            distance > 3 * this.grid.tileSize
-          ) {
-            closeRubbish.push(tile);
-          } else if (distance > maxCloseDistance && distance < maxFarDistance) {
-            farRubbish.push(tile);
+          if (tile.actor.pos.y > this.player.pos.y) {
+            if (
+              distance <= maxCloseDistance &&
+              distance > 2.5 * this.grid.tileSize
+            ) {
+              closeRubbish.push(tile);
+            } else if (
+              distance > maxCloseDistance &&
+              distance < maxFarDistance
+            ) {
+              farRubbish.push(tile);
+            }
           }
         }
       }
@@ -171,21 +280,20 @@ export class Game extends ex.Scene {
 
     // Return the selected rubbish positions
     for (let rubbishTile of selectedRubbish) {
-      this.add(new Rubbish(rubbishTile.actor.pos));
+      this.add(new Rubbish(rubbishTile.actor.pos, this));
       console.log(rubbishTile);
     }
   }
 
-  onInitialize(engine: ex.Engine<any>): void {
+  onInitialize(): void {
     this.camera.zoom = 3;
 
+    this.setupUI();
 
     this.add(this.player);
     this.add(this.cameraBar);
     this.camera.pos = ex.vec(3.5 * 16, 0);
     this.camera.strategy.elasticToActor(this.cameraBar, 0.5, 0.5);
-
-    this.spawnRubbish(this.grid);
 
     document.getElementById("game")?.addEventListener("mousemove", (event) => {
       this.mousePos = ex.vec(event.x, event.y);
@@ -197,11 +305,11 @@ export class Game extends ex.Scene {
       );
     });
 
-    document.getElementById("game")?.addEventListener("mousedown", (event) => {
+    document.getElementById("game")?.addEventListener("mousedown", () => {
       this.mouseDown = true;
     });
 
-    document.getElementById("game")?.addEventListener("mouseup", (event) => {
+    document.getElementById("game")?.addEventListener("mouseup", () => {
       this.mouseDown = false;
     });
 
@@ -220,10 +328,11 @@ export class Game extends ex.Scene {
       console.log("clicked");
     });
   }
+  onPreUpdate(engine: ex.Engine, delta: number): void {
+    this.setScores()
+  }
 
   onMouseClick(): void {
     this.player.mouseClick();
   }
-
-  onPreUpdate(engine: ex.Engine<any>, delta: number): void {}
 }
