@@ -71,7 +71,6 @@ export class Game extends ex.Scene {
     const deathQuitButton = document.getElementById("death-quit");
 
     if (deathPlayButton != null) {
-      console.log("it exists");
       deathPlayButton.onclick = () => this.startGame();
     }
 
@@ -86,7 +85,7 @@ export class Game extends ex.Scene {
     menu?.classList.add("hide");
 
     const gameover = document.getElementById("death");
-    
+
     gameover?.classList.add("hide");
 
     const gameUI = document.getElementById("gameplay");
@@ -281,7 +280,6 @@ export class Game extends ex.Scene {
     // Return the selected rubbish positions
     for (let rubbishTile of selectedRubbish) {
       this.add(new Rubbish(rubbishTile.actor.pos, this));
-      console.log(rubbishTile);
     }
   }
 
@@ -325,7 +323,6 @@ export class Game extends ex.Scene {
       );
 
       this.onMouseClick();
-      console.log("clicked");
     });
   }
   onPreUpdate(engine: ex.Engine, delta: number): void {

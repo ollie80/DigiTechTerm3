@@ -3,18 +3,17 @@ import { Resources } from "./resources";
 import "./support";
 import { Game } from "./game";
 import { GridTile } from "./grid";
-import { gameSprites, getRandom, loadGame, moveTowards } from "./support";
-import { TweenableActor, Ease } from "./tween";
+import { gameSprites, getRandom, loadGame } from "./support";
+import { TweenableActor } from "./tween";
 
 export class Player extends TweenableActor {
   private path: GridTile[] = [];
   private isMoving = false;
   private speed = 40;
-  public fuel = 4;
-  public maxFuel = 4;
-  public deathTimer = new ex.Timer({ interval: 1000 });
+  public fuel = 5;
+  public maxFuel = 5;
+  public deathTimer = new ex.Timer({ interval: 2000 });
   private animSpeed = 2;
-  
 
   constructor(
     pos: ex.Vector,
@@ -217,8 +216,6 @@ export class Player extends TweenableActor {
             this.path.shift();
             this.fuel -= 1;
             this.game.score += 1;
-            
-            console.log("here");
           }
         }
       }
@@ -228,10 +225,13 @@ export class Player extends TweenableActor {
   death() {
     if (this.game.isPlaying) {
       if (this.deathTimer.complete) {
-        this.kill();
+        console.log("death time exceeded")
+        this.game.gameOver();
+        this.path = [];
       }
 
       if (this.fuel <= 0) {
+        console.log("fuel limit exceeded")
         this.game.gameOver();
         this.path = [];
       }
@@ -279,6 +279,7 @@ export class Rubbish extends ex.Actor {
     contact: ex.CollisionContact
   ): void {
     if (other.owner instanceof Player) {
+      console.log(`Got fuel ${other.owner.maxFuel}`)
       other.owner.fuel = other.owner.maxFuel;
       this.death();
       this.game.spawnRubbish();
