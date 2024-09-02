@@ -8,8 +8,8 @@ import path from 'path';
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 800,
+    width: 360,
+    height: 600,
     show: false,
     //...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
